@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Studio - Plataforma Completa</title>
+  <style>
+    :root {
+      --bg-primary: #0a0d14;
+      --bg-secondary: #111827;
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --card-hover: rgba(99, 102, 241, 0.15);
+      --shadow: rgba(0, 0, 0, 0.8);
+      --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+    }
+
+    body.light-mode {
+      --bg-primary: #f1f5f9;
+      --bg-secondary: #ffffff;
+      --bg-card: rgba(0, 0, 0, 0.03);
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --border-color: rgba(0, 0, 0, 0.1);
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --card-hover: rgba(79, 70, 229, 0.1);
+      --shadow: rgba(0, 0, 0, 0.15);
+      --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    /* Estilos globales de Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      height: 60px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-secondary:hover {
+      background: var(--card-hover);
+    }
+
+    .upload-btn {
+      background: var(--accent);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+
+    .upload-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    /* Estructura con soporte para Scroll independiente */
+    .layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .main-stage {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .player-container {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      box-shadow: 0 20px 40px var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .empty-state {
+      position: absolute;
+      text-align: center;
+      color: var(--text-secondary);
+      pointer-events: none;
+      padding: 20px;
+    }
+
+    .error-notice {
+      display: none;
+      position: absolute;
+      background: rgba(239, 68, 68, 0.9);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .video-details {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      flex-shrink: 0;
+    }
+
+    .video-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .video-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .video-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .author-badge {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-action:hover {
+      background: var(--card-hover);
+    }
+
+    .btn-action.active-like {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-action.active-dislike {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .btn-block-channel {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #ef4444;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-block-channel:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    .add-community-form {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .add-community-form input {
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .add-community-form button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Sección de Comentarios con Scroll */
+    .comments-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .comments-section h3 {
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+
+    .comment-form {
+      display: flex;
+      gap: 10px;
+    }
+
+    .comment-form input {
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .comment-form button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .comment-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .comment-author {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .comment-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      margin-top: 4px;
+    }
+
+    /* Sidebar con Scroll */
+    .sidebar {
+      width: 360px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 14px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .playlist {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .video-card {
+      display: flex;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .video-card:hover {
+      background: var(--card-hover);
+      border-color: var(--accent);
+    }
+
+    .video-card.active {
+      background: var(--card-hover);
+      border-color: var(--accent);
+    }
+
+    .card-thumb {
+      width: 110px;
+      height: 62px;
+      background: #1e293b;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-author {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .btn-delete {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(239, 68, 68, 0.2);
+      border: none;
+      color: #ef4444;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .video-card:hover .btn-delete {
+      display: flex;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 30px var(--shadow);
+    }
+
+    .modal-card h2 {
+      font-size: 18px;
+      color: var(--text-primary);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .form-group input, .form-group textarea {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+      <span>Video Studio</span>
+    </div>
+    
+    <div class="controls-right">
+      <button class="btn-secondary" onclick="openChannelModal()">
+        ⚙️ Personalizar Canal
+      </button>
+
+      <button class="btn-secondary" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span>
+        <span id="themeText">Modo Oscuro</span>
+      </button>
+
+      <label class="upload-btn">
+        📁 Subir Mi Video
+        <input type="file" id="fileInput" accept="video/*" multiple onchange="handleFiles(this.files)">
+      </label>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="main-stage">
+      <div class="player-container" id="dropZone">
+        <div class="empty-state" id="emptyState">
+          <p style="font-size: 16px; font-weight: 600;">Selecciona un video</p>
+          <p style="font-size: 13px; margin-top: 4px;">Explora la comunidad o sube tu propio contenido</p>
+        </div>
+        <div class="error-notice" id="errorNotice">⚠️ Error de red al reproducir este enlace externo.</div>
+        <video id="mainPlayer" controls style="display: none;"></video>
+      </div>
+
+      <div class="video-details">
+        <div class="video-header-row">
+          <div>
+            <h1 class="video-title" id="displayTitle">Bienvenido a Video Studio</h1>
+            <div class="video-meta">
+              <span id="displayAuthor" class="author-badge">Creador: --</span>
+              <span id="displaySource">Origen: --</span>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn-action" id="btnLike" onclick="toggleLike()">
+              👍 <span id="likeCount">0</span>
+            </button>
+            <button class="btn-action" id="btnDislike" onclick="toggleDislike()">
+              👎 <span id="dislikeCount">0</span>
+            </button>
+            <button id="btnBlockChannel" class="btn-block-channel" style="display: none;" onclick="blockCurrentChannel()">
+              🚫 No recomendar
+            </button>
+          </div>
+        </div>
+
+        <form class="add-community-form" onsubmit="addCommunityUrl(event)">
+          <input type="text" id="comTitle" placeholder="Título para la comunidad..." required>
+          <input type="url" id="comUrl" placeholder="URL directa de video MP4/WebM..." required>
+          <button type="submit">+ Publicar Video</button>
+        </form>
+      </div>
+
+      <div class="comments-section">
+        <h3>💬 Comentarios (<span id="commentsCount">0</span>)</h3>
+        <form class="comment-form" onsubmit="addComment(event)">
+          <input type="text" id="commentInput" placeholder="Añade un comentario público..." required>
+          <button type="submit">Comentar</button>
+        </form>
+        <div class="comments-list" id="commentsList"></div>
+      </div>
+    </main>
+
+    <aside class="sidebar">
+      <div class="tabs">
+        <button class="tab-btn active" id="tabCommunity" onclick="switchTab('community')">🌐 Comunidad (<span id="commCount">0</span>)</button>
+        <button class="tab-btn" id="tabLocal" onclick="switchTab('local')">📁 Mis Videos (<span id="localCount">0</span>)</button>
+      </div>
+      <div class="playlist" id="playlist"></div>
+    </aside>
+  </div>
+
+  <div class="modal-overlay" id="channelModal">
+    <div class="modal-card">
+      <h2>⚙️ Personalizar Tu Canal</h2>
+      <div class="form-group">
+        <label>Nombre de usuario / Canal</label>
+        <input type="text" id="myChannelName" value="@MiUsuario">
+      </div>
+      <div class="form-group">
+        <label>Descripción del Canal</label>
+        <textarea id="myChannelBio" rows="3" style="resize:none;">Creador de contenido en Video Studio.</textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeChannelModal()">Cancelar</button>
+        <button class="upload-btn" onclick="saveChannelProfile()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let userProfile = {
+      name: "@MiUsuario",
+      bio: "Creador de contenido en Video Studio."
+    };
+
+    let blockedChannels = [];
+
+    const communityVideos = [
+      {
+        id: 'c1',
+        name: "Flor silvestre en movimiento",
+        author: "@MDN_Developer",
+        source: "Mozilla CDN",
+        url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+        thumb: "https://images.unsplash.com/photo-1536240478700-b869070f9279?w=300",
+        likes: 12,
+        dislikes: 1,
+        userReaction: null,
+        comments: [
+          { author: "@MDN_Developer", text: "¡Bienvenidos a la demostración en HD!" }
+        ]
+      },
+      {
+        id: 'c2',
+        name: "Big Buck Bunny HD",
+        author: "@BlenderFoundation",
+        source: "W3C Server",
+        url: "https://www.w3schools.com/html/mov_bbb.mp4",
+        thumb: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=300",
+        likes: 45,
+        dislikes: 2,
+        userReaction: null,
+        comments: [
+          { author: "@Animador3D", text: "Un clásico de la animación de código abierto." }
+        ]
+      }
+    ];
+
+    const localVideos = [];
+    let currentTab = 'community';
+    let activeId = null;
+
+    const mainPlayer = document.getElementById('mainPlayer');
+    const emptyState = document.getElementById('emptyState');
+    const errorNotice = document.getElementById('errorNotice');
+    const dropZone = document.getElementById('dropZone');
+    const btnBlockChannel = document.getElementById('btnBlockChannel');
+
+    mainPlayer.onerror = () => {
+      errorNotice.style.display = 'block';
+      setTimeout(() => { errorNotice.style.display = 'none'; }, 4000);
+    };
+
+    function getCurrentActiveVideo() {
+      return communityVideos.find(v => v.id === activeId) || localVideos.find(v => v.id === activeId);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
+      const isLight = document.body.classList.contains('light-mode');
+      document.getElementById('themeIcon').textContent = isLight ? '☀️' : '🌙';
+      document.getElementById('themeText').textContent = isLight ? 'Modo Claro' : 'Modo Oscuro';
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabCommunity').classList.toggle('active', tab === 'community');
+      document.getElementById('tabLocal').classList.toggle('active', tab === 'local');
+      renderPlaylist();
+    }
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#6366f1'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'transparent'; });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+    });
+
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        if (!file.type.startsWith('video/')) return;
+
+        const videoUrl = URL.createObjectURL(file);
+        const videoItem = {
+          id: 'l_' + Date.now() + Math.random(),
+          name: file.name,
+          author: userProfile.name + ' (Local)',
+          source: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+          url: videoUrl,
+          thumb: null,
+          likes: 0,
+          dislikes: 0,
+          userReaction: null,
+          comments: []
+        };
+
+        localVideos.push(videoItem);
+        generateThumbnail(videoItem);
+      });
+
+      switchTab('local');
+      if (localVideos.length > 0) {
+        selectVideo(localVideos[localVideos.length - files.length].id);
+      }
+    }
+
+    function generateThumbnail(item) {
+      const tempVideo = document.createElement('video');
+      tempVideo.src = item.url;
+      tempVideo.currentTime = 1;
+      tempVideo.onloadeddata = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 160;
+        canvas.height = 90;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+        item.thumb = canvas.toDataURL();
+        if (currentTab === 'local') renderPlaylist();
+      };
+    }
+
+    function selectVideo(id) {
+      let item = communityVideos.find(v => v.id === id) || localVideos.find(v => v.id === id);
+      if (!item) return;
+
+      activeId = id;
+      errorNotice.style.display = 'none';
+      emptyState.style.display = 'none';
+      mainPlayer.style.display = 'block';
+
+      mainPlayer.src = item.url;
+      mainPlayer.load();
+      mainPlayer.play().catch(() => {});
+
+      document.getElementById('displayTitle').textContent = item.name;
+      document.getElementById('displayAuthor').textContent = `Creador: ${item.author}`;
+      document.getElementById('displaySource').textContent = `Origen: ${item.source}`;
+
+      const isCommunity = communityVideos.some(v => v.id === id);
+      btnBlockChannel.style.display = isCommunity ? 'inline-block' : 'none';
+
+      updateReactionsUI();
+      renderComments();
+      renderPlaylist();
+    }
+
+    function toggleLike() {
+      let item = getCurrentActiveVideo();
+      if (!item) return;
+
+      if (item.userReaction === 'like') {
+        item.userReaction = null;
+        item.likes--;
+      } else {
+        if (item.userReaction === 'dislike') {
+          item.dislikes--;
+        }
+        item.userReaction = 'like';
+        item.likes++;
+      }
+      updateReactionsUI();
+    }
+
+    function toggleDislike() {
+      let item = getCurrentActiveVideo();
+      if (!item) return;
+
+      if (item.userReaction === 'dislike') {
+        item.userReaction = null;
+        item.dislikes--;
+      } else {
+        if (item.userReaction === 'like') {
+          item.likes--;
+        }
+        item.userReaction = 'dislike';
+        item.dislikes++;
+      }
+      updateReactionsUI();
+    }
+
+    function updateReactionsUI() {
+      let item = getCurrentActiveVideo();
+      if (!item) return;
+
+      document.getElementById('likeCount').textContent = item.likes || 0;
+      document.getElementById('dislikeCount').textContent = item.dislikes || 0;
+
+      const btnLike = document.getElementById('btnLike');
+      const btnDislike = document.getElementById('btnDislike');
+
+      btnLike.classList.toggle('active-like', item.userReaction === 'like');
+      btnDislike.classList.toggle('active-dislike', item.userReaction === 'dislike');
+    }
+
+    function addComment(e) {
+      e.preventDefault();
+      let item = getCurrentActiveVideo();
+      if (!item) return;
+
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      if (!item.comments) item.comments = [];
+      item.comments.unshift({
+        author: userProfile.name,
+        text: text
+      });
+
+      input.value = '';
+      renderComments();
+    }
+
+    function renderComments() {
+      let item = getCurrentActiveVideo();
+      const list = document.getElementById('commentsList');
+      const count = document.getElementById('commentsCount');
+
+      if (!item || !item.comments) {
+        count.textContent = '0';
+        list.innerHTML = `<div style="font-size: 12px; color: var(--text-secondary);">Sé el primero en comentar.</div>`;
+        return;
+      }
+
+      count.textContent = item.comments.length;
+      list.innerHTML = '';
+
+      if (item.comments.length === 0) {
+        list.innerHTML = `<div style="font-size: 12px; color: var(--text-secondary);">Sé el primero en comentar.</div>`;
+        return;
+      }
+
+      item.comments.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        div.innerHTML = `
+          <div class="comment-author">${c.author}</div>
+          <div class="comment-text">${c.text}</div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function blockCurrentChannel() {
+      let item = communityVideos.find(v => v.id === activeId);
+      if (!item) return;
+
+      if (!blockedChannels.includes(item.author)) {
+        blockedChannels.push(item.author);
+      }
+
+      const available = communityVideos.filter(v => !blockedChannels.includes(v.author));
+      if (available.length > 0) {
+        selectVideo(available[0].id);
+      } else {
+        activeId = null;
+        mainPlayer.pause();
+        mainPlayer.style.display = 'none';
+        emptyState.style.display = 'block';
+        document.getElementById('displayTitle').textContent = 'Canal Ocultado';
+        document.getElementById('displayAuthor').textContent = 'Creador: --';
+        document.getElementById('displaySource').textContent = 'Origen: --';
+        btnBlockChannel.style.display = 'none';
+        updateReactionsUI();
+        renderComments();
+      }
+
+      renderPlaylist();
+    }
+
+    function openChannelModal() {
+      document.getElementById('myChannelName').value = userProfile.name;
+      document.getElementById('myChannelBio').value = userProfile.bio;
+      document.getElementById('channelModal').style.display = 'flex';
+    }
+
+    function closeChannelModal() {
+      document.getElementById('channelModal').style.display = 'none';
+    }
+
+    function saveChannelProfile() {
+      const newName = document.getElementById('myChannelName').value.trim();
+      const newBio = document.getElementById('myChannelBio').value.trim();
+
+      if (newName) {
+        const oldName = userProfile.name;
+        userProfile.name = newName;
+        userProfile.bio = newBio;
+
+        localVideos.forEach(v => {
+          if (v.author.includes(oldName)) {
+            v.author = newName + ' (Local)';
+          }
+        });
+      }
+
+      closeChannelModal();
+      renderPlaylist();
+
+      if (activeId && localVideos.some(v => v.id === activeId)) {
+        document.getElementById('displayAuthor').textContent = `Creador: ${userProfile.name} (Local)`;
+      }
+    }
+
+    function addCommunityUrl(e) {
+      e.preventDefault();
+      const titleInput = document.getElementById('comTitle');
+      const urlInput = document.getElementById('comUrl');
+
+      const newVideo = {
+        id: 'c_' + Date.now(),
+        name: titleInput.value.trim(),
+        author: userProfile.name,
+        source: "Enlace Externo",
+        url: urlInput.value.trim(),
+        thumb: null,
+        likes: 0,
+        dislikes: 0,
+        userReaction: null,
+        comments: []
+      };
+
+      communityVideos.push(newVideo);
+      switchTab('community');
+      selectVideo(newVideo.id);
+
+      titleInput.value = '';
+      urlInput.value = '';
+    }
+
+    function deleteVideo(e, id) {
+      e.stopPropagation();
+      const index = localVideos.findIndex(v => v.id === id);
+      if (index === -1) return;
+
+      URL.revokeObjectURL(localVideos[index].url);
+      localVideos.splice(index, 1);
+
+      if (activeId === id) {
+        if (localVideos.length > 0) {
+          selectVideo(localVideos[0].id);
+        } else {
+          activeId = null;
+          mainPlayer.pause();
+          mainPlayer.style.display = 'none';
+          emptyState.style.display = 'block';
+          document.getElementById('displayTitle').textContent = 'Ningún proyecto cargado';
+          document.getElementById('displayAuthor').textContent = 'Creador: --';
+          document.getElementById('displaySource').textContent = 'Origen: --';
+          btnBlockChannel.style.display = 'none';
+          updateReactionsUI();
+          renderComments();
+        }
+      }
+
+      renderPlaylist();
+    }
+
+    function renderPlaylist() {
+      const container = document.getElementById('playlist');
+      const activeCommunity = communityVideos.filter(v => !blockedChannels.includes(v.author));
+
+      document.getElementById('commCount').textContent = activeCommunity.length;
+      document.getElementById('localCount').textContent = localVideos.length;
+      container.innerHTML = '';
+
+      const list = currentTab === 'community' ? activeCommunity : localVideos;
+
+      if (list.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-secondary); font-size: 13px;">No hay videos en esta sección.</div>`;
+        return;
+      }
+
+      list.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `video-card ${item.id === activeId ? 'active' : ''}`;
+        card.onclick = () => selectVideo(item.id);
+
+        card.innerHTML = `
+          <div class="card-thumb">
+            ${item.thumb ? `<img src="${item.thumb}">` : '🎬'}
+          </div>
+          <div class="card-info">
+            <div class="card-title">${item.name}</div>
+            <div class="card-author">${item.author} • ${item.source}</div>
+          </div>
+          ${currentTab === 'local' ? `<button class="btn-delete" onclick="deleteVideo(event, '${item.id}')">✕</button>` : ''}
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    renderPlaylist();
+    selectVideo('c1');
+  </script>
+</body>
+</html>
