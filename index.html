@@ -1025,7 +1025,6 @@
     let activeId = null;
     let autoplayEnabled = true;
 
-    // Cola de videos pendientes por configurar antes de subir
     let uploadQueue = [];
 
     const mainPlayer = document.getElementById('mainPlayer');
@@ -1038,7 +1037,6 @@
     const canvasCtx = audioCanvas.getContext('2d');
 
     function saveCommunityStorage() {
-      // Guardar publicaciones de la comunidad sin guardar las URLs Blob locales volátiles
       const serializable = communityVideos.filter(v => !v.url.startsWith('blob:'));
       localStorage.setItem('vs_community_videos', JSON.stringify(serializable));
     }
@@ -1066,12 +1064,19 @@
       const current = formatTime(mainPlayer.currentTime);
       const total = formatTime(mainPlayer.duration || 0);
       document.getElementById('timeDisplay').textContent = `${current} / ${total}`;
-      if (activeId) localStorage.setItem(`vs_pos_${activeId}`, mainPlayer.currentTime);
+      
+      // Guardar posición solo si no se encuentra al final del video
+      if (activeId && mainPlayer.duration && mainPlayer.currentTime < (mainPlayer.duration - 1)) {
+        localStorage.setItem(`vs_pos_${activeId}`, mainPlayer.currentTime);
+      }
     };
 
+    // Validación precisa de finalización para evitar falsos avisos al iniciar reproducción
     mainPlayer.onended = () => {
-      showToast("Video finalizado");
-      if (autoplayEnabled) playNextVideo();
+      if (mainPlayer.duration > 0 && mainPlayer.currentTime >= (mainPlayer.duration - 1)) {
+        showToast("Video finalizado");
+        if (autoplayEnabled) playNextVideo();
+      }
     };
 
     function showToast(msg) {
@@ -1176,7 +1181,6 @@
         comments: []
       };
 
-      // Se agrega directamente a la lista de la comunidad global
       communityVideos.unshift(videoItem);
       generateThumbnail(videoItem);
       saveCommunityStorage();
@@ -1188,7 +1192,7 @@
       } else {
         switchTab('community');
         selectVideo(videoItem.id);
-        showToast("¡Video publicado para todos la comunidad!");
+        showToast("¡Video publicado para toda la comunidad!");
       }
     }
 
@@ -1226,8 +1230,20 @@
       mainPlayer.src = item.url;
       mainPlayer.load();
 
+      // Ajustar posición previa guardada asegurando que no empiece finalizado
       const savedPos = localStorage.getItem(`vs_pos_${id}`);
-      if (savedPos) mainPlayer.currentTime = parseFloat(savedPos);
+      if (savedPos) {
+        const pos = parseFloat(savedPos);
+        mainPlayer.onloadedmetadata = () => {
+          if (mainPlayer.duration && pos < mainPlayer.duration - 1) {
+            mainPlayer.currentTime = pos;
+          } else {
+            mainPlayer.currentTime = 0;
+          }
+        };
+      } else {
+        mainPlayer.currentTime = 0;
+      }
 
       mainPlayer.play().catch(() => {});
 
@@ -1708,7 +1724,6 @@
       });
     }
 
-    // Atajos Globales de Teclado
     document.addEventListener('keydown', (e) => {
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
