@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Video Studio</title>
+  <title>Video Studio - Plataforma Completa Pro</title>
   <style>
     :root {
       --bg-primary: #0a0d14;
@@ -755,8 +755,8 @@
         <span id="themeText">Oscuro</span>
       </button>
 
-      <label class="upload-btn" title="Subir video local">
-        📁 Subir Mi Video
+      <label class="upload-btn" title="Subir video a la comunidad">
+        🌐 Publicar Mi Video
         <input type="file" id="fileInput" accept="video/*" multiple onchange="handleFiles(this.files)">
       </label>
     </div>
@@ -841,7 +841,7 @@
 
         <form class="comment-form" onsubmit="addComment(event)">
           <div class="comment-input-row">
-            <input type="text" id="commentInput" maxlength="280" placeholder="Añade un comentario público... (Usa marcas como 00:05)" required oninput="updateCharCount(this)">
+            <input type="text" id="commentInput" maxlength="280" placeholder="Añade un comentario público..." required oninput="updateCharCount(this)">
             <button type="submit">Comentar</button>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -860,7 +860,7 @@
 
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-search">
-        <input type="text" id="searchInput" placeholder="🔍 Buscar videos..." oninput="renderPlaylist()">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar videos en la comunidad..." oninput="renderPlaylist()">
         <select id="sortPlaylistSelect" onchange="renderPlaylist()" style="background:var(--bg-primary); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; font-size:11px;">
           <option value="default">Por defecto</option>
           <option value="title">Título</option>
@@ -870,7 +870,6 @@
 
       <div class="tabs">
         <button class="tab-btn active" id="tabCommunity" onclick="switchTab('community')">🌐 Comunidad (<span id="commCount">0</span>)</button>
-        <button class="tab-btn" id="tabLocal" onclick="switchTab('local')">📁 Mis Videos (<span id="localCount">0</span>)</button>
         <button class="tab-btn" id="tabFavs" onclick="switchTab('favs')">⭐ Favoritos</button>
         <button class="tab-btn" id="tabWatchLater" onclick="switchTab('later')">🕒 Más Tarde</button>
       </div>
@@ -881,18 +880,16 @@
         <button class="btn-secondary" style="font-size:10px;" onclick="exportPlaylist()">💾 Exportar JSON</button>
         <button class="btn-secondary" style="font-size:10px;" onclick="document.getElementById('importInput').click()">📥 Importar JSON</button>
         <input type="file" id="importInput" accept=".json" onchange="importPlaylist(this.files)">
-        <button class="btn-secondary" style="font-size:10px; color:#ef4444;" onclick="clearAllLocal()">🗑️ Limpiar Todo</button>
       </div>
     </aside>
   </div>
 
-  <!-- MODAL: Configurar video antes de subir -->
   <div class="modal-overlay" id="uploadModal">
     <div class="modal-card">
-      <h2>🎬 Configurar Nuevo Video</h2>
+      <h2>🌐 Publicar Video en la Comunidad</h2>
       <div class="form-group">
         <label>Título del Video</label>
-        <input type="text" id="uploadTitleInput" placeholder="Escribe un título...">
+        <input type="text" id="uploadTitleInput" placeholder="Escribe un título para la comunidad...">
       </div>
       <div class="form-group">
         <label>Orientación de pantalla</label>
@@ -903,12 +900,11 @@
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="cancelUpload()">Cancelar</button>
-        <button class="upload-btn" onclick="confirmUpload()">Subir Video</button>
+        <button class="upload-btn" onclick="confirmUpload()">Publicar para Todos</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Personalizar Canal -->
   <div class="modal-overlay" id="channelModal">
     <div class="modal-card">
       <h2>⚙️ Personalizar Tu Canal</h2>
@@ -946,7 +942,6 @@
     </div>
   </div>
 
-  <!-- MODAL: Atajos de Teclado -->
   <div class="modal-overlay" id="shortcutsModal">
     <div class="modal-card">
       <h2>⌨️ Atajos de Teclado</h2>
@@ -964,7 +959,6 @@
     </div>
   </div>
 
-  <!-- MODAL: Embed -->
   <div class="modal-overlay" id="embedModal">
     <div class="modal-card">
       <h2><code>&lt;/&gt;</code> Código para Insertar</h2>
@@ -994,7 +988,7 @@
     let subscriptions = JSON.parse(localStorage.getItem('vs_subs')) || [];
     let historyList = JSON.parse(localStorage.getItem('vs_history')) || [];
 
-    const communityVideos = [
+    const communityVideos = JSON.parse(localStorage.getItem('vs_community_videos')) || [
       {
         id: 'c1',
         name: "Flor silvestre en movimiento",
@@ -1007,7 +1001,7 @@
         dislikes: 1,
         userReaction: null,
         comments: [
-          { id: 'cm1', author: "@MDN_Developer", text: "¡Bienvenidos a la demostración en HD! Mira en 00:02", likes: 3 }
+          { id: 'cm1', author: "@MDN_Developer", text: "¡Bienvenidos a la demostración en HD!", likes: 3 }
         ]
       },
       {
@@ -1027,7 +1021,6 @@
       }
     ];
 
-    const localVideos = JSON.parse(localStorage.getItem('vs_local_meta')) || [];
     let currentTab = 'community';
     let activeId = null;
     let autoplayEnabled = true;
@@ -1043,6 +1036,12 @@
 
     const audioCanvas = document.getElementById('audioCanvas');
     const canvasCtx = audioCanvas.getContext('2d');
+
+    function saveCommunityStorage() {
+      // Guardar publicaciones de la comunidad sin guardar las URLs Blob locales volátiles
+      const serializable = communityVideos.filter(v => !v.url.startsWith('blob:'));
+      localStorage.setItem('vs_community_videos', JSON.stringify(serializable));
+    }
 
     function drawAudioVisualizer() {
       requestAnimationFrame(drawAudioVisualizer);
@@ -1092,7 +1091,7 @@
     }
 
     function getCurrentActiveVideo() {
-      return communityVideos.find(v => v.id === activeId) || localVideos.find(v => v.id === activeId);
+      return communityVideos.find(v => v.id === activeId);
     }
 
     function toggleTheme() {
@@ -1118,7 +1117,6 @@
     function switchTab(tab) {
       currentTab = tab;
       document.getElementById('tabCommunity').classList.toggle('active', tab === 'community');
-      document.getElementById('tabLocal').classList.toggle('active', tab === 'local');
       document.getElementById('tabFavs').classList.toggle('active', tab === 'favs');
       document.getElementById('tabWatchLater').classList.toggle('active', tab === 'later');
       renderPlaylist();
@@ -1165,10 +1163,10 @@
 
       const videoUrl = URL.createObjectURL(file);
       const videoItem = {
-        id: 'l_' + Date.now() + Math.random(),
+        id: 'c_' + Date.now() + Math.random(),
         name: customTitle,
-        author: userProfile.name + ' (Local)',
-        source: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+        author: userProfile.name,
+        source: "Publicado en Comunidad",
         orientation: orientation,
         url: videoUrl,
         thumb: null,
@@ -1178,17 +1176,19 @@
         comments: []
       };
 
-      localVideos.push(videoItem);
+      // Se agrega directamente a la lista de la comunidad global
+      communityVideos.unshift(videoItem);
       generateThumbnail(videoItem);
+      saveCommunityStorage();
 
       document.getElementById('uploadModal').style.display = 'none';
 
       if (uploadQueue.length > 0) {
         promptNextFileModal();
       } else {
-        switchTab('local');
+        switchTab('community');
         selectVideo(videoItem.id);
-        showToast("Video añadido con éxito");
+        showToast("¡Video publicado para todos la comunidad!");
       }
     }
 
@@ -1203,12 +1203,12 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
         item.thumb = canvas.toDataURL();
-        if (currentTab === 'local') renderPlaylist();
+        renderPlaylist();
       };
     }
 
     function selectVideo(id) {
-      let item = communityVideos.find(v => v.id === id) || localVideos.find(v => v.id === id);
+      let item = communityVideos.find(v => v.id === id);
       if (!item) return;
 
       activeId = id;
@@ -1216,7 +1216,6 @@
       emptyState.style.display = 'none';
       mainPlayer.style.display = 'block';
 
-      // Ajustar orientación del contenedor del reproductor
       const playerBox = document.getElementById('dropZone');
       if (item.orientation === 'vertical') {
         playerBox.classList.add('is-vertical');
@@ -1236,8 +1235,7 @@
       document.getElementById('displayAuthor').textContent = `Creador: ${item.author}`;
       document.getElementById('displaySource').textContent = `Origen: ${item.source}`;
 
-      const isCommunity = communityVideos.some(v => v.id === id);
-      btnBlockChannel.style.display = isCommunity ? 'inline-block' : 'none';
+      btnBlockChannel.style.display = (item.author !== userProfile.name) ? 'inline-block' : 'none';
 
       updateReactionsUI();
       renderComments();
@@ -1299,6 +1297,7 @@
         item.likes++;
       }
       updateReactionsUI();
+      saveCommunityStorage();
     }
 
     function toggleDislike() {
@@ -1314,6 +1313,7 @@
         item.dislikes++;
       }
       updateReactionsUI();
+      saveCommunityStorage();
     }
 
     function updateReactionsUI() {
@@ -1364,6 +1364,7 @@
       input.value = '';
       updateCharCount(input);
       renderComments();
+      saveCommunityStorage();
       showToast("Comentario publicado");
     }
 
@@ -1421,7 +1422,7 @@
       let item = getCurrentActiveVideo();
       if (!item) return;
       let cm = item.comments.find(c => c.id === cmId);
-      if (cm) { cm.likes = (cm.likes || 0) + 1; renderComments(); }
+      if (cm) { cm.likes = (cm.likes || 0) + 1; renderComments(); saveCommunityStorage(); }
     }
 
     function deleteComment(cmId) {
@@ -1429,6 +1430,7 @@
       if (!item) return;
       item.comments = item.comments.filter(c => c.id !== cmId);
       renderComments();
+      saveCommunityStorage();
     }
 
     function toggleFavorite(e, id) {
@@ -1575,7 +1577,7 @@
         id: 'c_' + Date.now(),
         name: titleInput.value.trim(),
         author: userProfile.name,
-        source: "Enlace Externo",
+        source: "Comunidad (Enlace Directo)",
         orientation: "horizontal",
         url: urlInput.value.trim(),
         thumb: null,
@@ -1585,24 +1587,30 @@
         comments: []
       };
 
-      communityVideos.push(newVideo);
+      communityVideos.unshift(newVideo);
+      saveCommunityStorage();
       switchTab('community');
       selectVideo(newVideo.id);
 
       titleInput.value = '';
       urlInput.value = '';
+      showToast("Video publicado en la Comunidad");
     }
 
-    function deleteVideo(e, id) {
+    function deleteCommunityVideo(e, id) {
       e.stopPropagation();
-      const index = localVideos.findIndex(v => v.id === id);
+      const index = communityVideos.findIndex(v => v.id === id);
       if (index === -1) return;
 
-      URL.revokeObjectURL(localVideos[index].url);
-      localVideos.splice(index, 1);
+      if (communityVideos[index].url.startsWith('blob:')) {
+        URL.revokeObjectURL(communityVideos[index].url);
+      }
+
+      communityVideos.splice(index, 1);
+      saveCommunityStorage();
 
       if (activeId === id) {
-        if (localVideos.length > 0) selectVideo(localVideos[0].id);
+        if (communityVideos.length > 0) selectVideo(communityVideos[0].id);
         else {
           activeId = null;
           mainPlayer.pause();
@@ -1611,23 +1619,14 @@
         }
       }
       renderPlaylist();
-      showToast("Video eliminado");
-    }
-
-    function clearAllLocal() {
-      if (confirm("¿Estás seguro de eliminar todos los videos locales?")) {
-        localVideos.forEach(v => URL.revokeObjectURL(v.url));
-        localVideos.length = 0;
-        renderPlaylist();
-        showToast("Biblioteca local limpiada");
-      }
+      showToast("Video eliminado de la comunidad");
     }
 
     function exportPlaylist() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localVideos));
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(communityVideos));
       const anchor = document.createElement('a');
       anchor.setAttribute("href", dataStr);
-      anchor.setAttribute("download", "videostudio_playlist.json");
+      anchor.setAttribute("download", "videostudio_community.json");
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -1639,9 +1638,10 @@
       reader.onload = (e) => {
         try {
           const imported = JSON.parse(e.target.result);
-          imported.forEach(v => localVideos.push(v));
+          imported.forEach(v => communityVideos.unshift(v));
+          saveCommunityStorage();
           renderPlaylist();
-          showToast("Lista importada correctamente");
+          showToast("Lista importada a la comunidad");
         } catch(err) {
           showToast("Error al importar el JSON");
         }
@@ -1654,9 +1654,8 @@
       const activeCommunity = communityVideos.filter(v => !blockedChannels.includes(v.author));
 
       if (currentTab === 'community') list = activeCommunity;
-      else if (currentTab === 'local') list = localVideos;
-      else if (currentTab === 'favs') list = [...communityVideos, ...localVideos].filter(v => favoritesList.includes(v.id));
-      else if (currentTab === 'later') list = [...communityVideos, ...localVideos].filter(v => watchLaterList.includes(v.id));
+      else if (currentTab === 'favs') list = communityVideos.filter(v => favoritesList.includes(v.id));
+      else if (currentTab === 'later') list = communityVideos.filter(v => watchLaterList.includes(v.id));
 
       const query = document.getElementById('searchInput').value.toLowerCase();
       if (query) list = list.filter(v => v.name.toLowerCase().includes(query) || v.author.toLowerCase().includes(query));
@@ -1673,7 +1672,6 @@
       const activeCommunity = communityVideos.filter(v => !blockedChannels.includes(v.author));
 
       document.getElementById('commCount').textContent = activeCommunity.length;
-      document.getElementById('localCount').textContent = localVideos.length;
       container.innerHTML = '';
 
       const list = getActiveList();
@@ -1702,7 +1700,7 @@
           <div class="card-actions-row">
             <button class="btn-card-icon" title="Favorito" onclick="toggleFavorite(event, '${item.id}')">${isFav ? '⭐' : '☆'}</button>
             <button class="btn-card-icon" title="Ver Más Tarde" onclick="toggleWatchLater(event, '${item.id}')">${isLater ? '🕒' : '⏳'}</button>
-            ${currentTab === 'local' ? `<button class="btn-card-icon btn-delete" title="Eliminar" onclick="deleteVideo(event, '${item.id}')">✕</button>` : ''}
+            ${item.author === userProfile.name ? `<button class="btn-card-icon btn-delete" title="Eliminar" onclick="deleteCommunityVideo(event, '${item.id}')">✕</button>` : ''}
           </div>
         `;
 
